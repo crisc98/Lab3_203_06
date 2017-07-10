@@ -7,11 +7,15 @@ package uwaterloo.ca.lab4_203_06;
 public class Position {
     float xPos;
     float yPos;
+    int blocknum_x;
+    int blocknum_y;
     boolean occupied;
 
-    public Position(float x, float y, boolean occupied) {
+    public Position(float x, float y, int blocknum_x, int blocknum_y, boolean occupied) {
         xPos = x;
         yPos = y;
+        this.blocknum_x = blocknum_x;
+        this.blocknum_y = blocknum_y;
         this.occupied = occupied;
     }
 
@@ -23,6 +27,16 @@ public class Position {
         return yPos;
     }
 
+    public int getBlocknum_x(){return blocknum_x;};
+
+    public int getBlocknum_y(){return blocknum_y;};
+
+    public void setBlocknum_x(int x){
+        blocknum_x = x;
+    }
+    public void setBlocknum_y(int y){
+        blocknum_y = y;
+    }
     public boolean isOccupied() {
         return occupied;
     }

@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import java.util.Random;
 import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 
 
@@ -31,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView gameBoard;
     Timer time = new Timer();
     RelativeLayout rl;
-    Activity activity = this;
+    final Activity activity = this;
     Position[][] positions = new Position[4][4];
     Random rnd = new Random();
 
@@ -60,45 +61,43 @@ public class MainActivity extends AppCompatActivity {
 
         //Creates a label that indicates the current accelerometer reading
         gameBoard = makeLabel(rl, R.drawable.gameboard, BOARDX, BOARDY);
-        final GameBlock gameBlock = new GameBlock(rl, R.drawable.gameblock, BLOCKX, BLOCKY,
-                getApplicationContext(), time, gameBoard, this, positions);
-        blocks.add(gameBlock);
         assign();
+        positions[0][0].setOccupied(true);
+        final GameBlock gameBlock = new GameBlock(rl, R.drawable.gameblock, positions[0][0].getX(), positions[0][0].getY(),
+                getApplicationContext(), time, gameBoard, this, positions, positions[0][0].getBlocknum_x(),positions[0][0].getBlocknum_y(),2);
+        blocks.add(gameBlock);
 
         l.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Position tmpPos =getRandPos();
                 moveAll("LEFT");
-                blocks.add(new GameBlock(rl, R.drawable.gameblock, tmpPos.getX(), tmpPos.getY(),
-                        getApplicationContext(), time, gameBoard, activity, positions));
+                time.schedule(rndBlockTask(), 25, 25);
+                //moveAllLeft();
             }
         });
         r.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Position tmpPos =getRandPos();
                 moveAll("RIGHT");
-                blocks.add(new GameBlock(rl, R.drawable.gameblock, tmpPos.getX(), tmpPos.getY(),
-                        getApplicationContext(), time, gameBoard, activity, positions));
+                time.schedule(rndBlockTask(), 25, 25);
+                //blocks.add(genRandGameBlock());
+                //moveAllRight();
             }
         });
         u.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Position tmpPos =getRandPos();
                 moveAll("UP");
-                blocks.add(new GameBlock(rl, R.drawable.gameblock, tmpPos.getX(), tmpPos.getY(),
-                        getApplicationContext(), time, gameBoard, activity, positions));
+                time.schedule(rndBlockTask(), 25, 25);
+                //blocks.add(genRandGameBlock());
             }
         });
         d.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Position tmpPos =getRandPos();
                 moveAll("DOWN");
-                blocks.add(new GameBlock(rl, R.drawable.gameblock, tmpPos.getX(), tmpPos.getY(),
-                        getApplicationContext(), time, gameBoard, activity, positions));
+                time.schedule(rndBlockTask(), 25, 25);
+                //blocks.add(genRandGameBlock());
             }
         });
 
@@ -111,13 +110,36 @@ public class MainActivity extends AppCompatActivity {
         sensorManager.registerListener(accel, accelSensor, SensorManager.SENSOR_DELAY_GAME);
 
     }
+    public TimerTask rndBlockTask(){
+        return new TimerTask() {
+            @Override
+            public void run() {
+                activity.runOnUiThread(new Runnable(){
+                    public void run(){
+                        if(isDoneMov()){
+                            blocks.add(genRandGameBlock());
+                            cancel();
+                        }
+                    }
+                });
+            }
+        };
+    }
+    public boolean isDoneMov(){
+        for(GameBlock e: blocks){
+            if(!e.isDoneMov()){
+                return false;
+            }
+        }
+        return true;
+    }
     private void assign() {
         for (int i = 0; i < 4; i++) {
             for(int j=0;j<4;j++){
-                positions[i][j] = new Position(255*j ,255*i, false);
+                positions[i][j] = new Position(255*j ,255*i, j, i, false);
                 //makeLabel(rl,R.drawable.red,-490+(255*j),-1325+(255*i));
-                Log.d("Position","Width: "+gameBoard.getMeasuredWidth());
-                Log.d("Position","X: "+positions[i][j].getX()+ "Y: "+positions[i][j].getY());
+                //Log.d("Position","Width: "+gameBoard.getMeasuredWidth());
+                //Log.d("Position","X: "+positions[i][j].getX()+ "Y: "+positions[i][j].getY());
             }
         }
     }
@@ -144,16 +166,126 @@ public class MainActivity extends AppCompatActivity {
     }
     private void moveAll(String dir){
         for (GameBlock e : blocks){
+            e.setStop(getStop(dir, e));
+            e.move(dir);
+        }
+        for (GameBlock e : blocks){
             e.move(dir);
         }
     }
+    public int getStop(String dir, GameBlock gb){
+        switch (dir){
+            case "RIGHT":
+                int pos_xr = gb.getBlocknum_x();
+                int counter = 0;
+                for(int i = pos_xr+1; i < 4; i++){
+                    if(positions[gb.getBlocknum_y()][i].isOccupied() == false){
+                        counter++;
+                    }
+                }
+                return counter+pos_xr;
+            case "LEFT":
+                int pos_xl = gb.getBlocknum_x();
+                int counter2 = 0;
+                for(int i = pos_xl-1; i >= 0; i--){
+                    if(positions[gb.getBlocknum_y()][i].isOccupied() == false){
+                        counter2++;
+                    }
+                }
+                return pos_xl-counter2;
+            case "UP":
+            int pos_yu = gb.getBlocknum_y();
+            int counter3 = 0;
+            for(int i = pos_yu-1; i >= 0; i--){
+                if(positions[i][gb.getBlocknum_x()].isOccupied() == false){
+                    counter3++;
+                }
+            }
+                return pos_yu-counter3;
+            case "DOWN":
+            int pos_yd = gb.getBlocknum_y();
+            int counter4 = 0;
+            for(int i = pos_yd+1; i < 4; i++){
+                if(positions[i][gb.getBlocknum_x()].isOccupied() == false){
+                    counter4++;
+                }
+            }
+            return counter4+pos_yd;
+            default:
+                return 0;
+        }
+    }
+    /*private void moveAllLeft(){
+        for(int y = 0; y < 4; y++){
+            for(int x = 0 ; x <4; x++){
+                if(positions[y][x].isOccupied()){
+                    for (GameBlock e : blocks){
+                        if((e.getBlocknum_x() == x)&&(e.getBlocknum_y()==y)){
+                            e.move("LEFT");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }*/
+    /*private void moveAllRight(){
+        for(int y = 0; y < 4; y++){
+            for(int x = 3 ; x >= 0; x--){
+                if(positions[y][x].isOccupied()){
+                    for (GameBlock e : blocks){
+                        if((e.getBlocknum_x() == x)&&(e.getBlocknum_y()==y)){
+                            e.move("RIGHT");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }*/
+    public GameBlock genRandGameBlock(){
+        Position tmpPos =getRandPos();
+        int tempcurrblocknum = rnd.nextInt(2);
+        if(tempcurrblocknum == 0){
+            tempcurrblocknum = 2;
+        }
+        else{
+            tempcurrblocknum = 4;
+        }
+        return new GameBlock(rl, R.drawable.gameblock, tmpPos.getX(), tmpPos.getY(),
+                getApplicationContext(), time, gameBoard, activity, positions, tmpPos.getBlocknum_x(), tmpPos.getBlocknum_y(), tempcurrblocknum);
+    }
     public Position getRandPos(){
-        Position tmpPos=positions[rnd.nextInt(4)][rnd.nextInt(4)];
-        if (tmpPos.isOccupied()){
+        int randx = rnd.nextInt(4);
+        int randy = rnd.nextInt(4);
+        Position tmpPos=positions[randx][randy];
+        while(tmpPos.isOccupied()){
+            randx = rnd.nextInt(4);
+            randy = rnd.nextInt(4);
+            tmpPos = positions[randx][randy];
+        }
+        positions[randx][randy].setOccupied(true);
+        Log.d("Position","BLOCK_x,y: " +randy+" " + randx);
+        for (int i = 0; i < 4; i++) {
+            for(int j=0;j<4;j++){
+                Log.d("Position","BLOCK_: " + j + ", " + i +" " + positions[i][j].isOccupied());
+            }
+        }
+        Log.d("Position","~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        return tmpPos;
+        /*if (tmpPos.isOccupied() == true){
             return getRandPos();
         }else {
+            positions[randy][randx].setOccupied(true);
+            Log.d("Position","BLOCK_x,y: " +randx+" " + randy);
+            for (int i = 0; i < 4; i++) {
+                for(int j=0;j<4;j++){
+                    Log.d("Position","BLOCK_: " + j + ", " + i +" " + positions[j][i].isOccupied());
+                }
+            }
+            Log.d("Position","~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
             return tmpPos;
-        }
+        }*/
     }
 
 
